@@ -128,7 +128,7 @@ export class MusicBot {
     }
 
     if (localTracks.length === 1) {
-      await this.playTrack(localTracks[0], clid);
+      await this.addToQueue(localTracks[0], clid);
       return;
     }
 
