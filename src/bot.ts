@@ -459,11 +459,15 @@ export class MusicBot {
     const pcm: Buffer<ArrayBufferLike> = await this.pipeline.toPcm(filePath);
     const frames: Buffer<ArrayBufferLike>[] = this.pipeline.splitFrames(pcm);
 
-    for (const frame of frames) {
+    const startTime = Date.now();
+    for (let i = 0; i < frames.length; i++) {
       if (!this.playing) break;
-      const opus: Buffer<ArrayBufferLike> = this.pipeline.encodeFrame(frame, this.volume);
+      const opus: Buffer<ArrayBufferLike> = this.pipeline.encodeFrame(frames[i], this.volume);
       this.client.sendVoice(opus);
-      await new Promise((r: (value: unknown)=> void) => setTimeout(r, FRAME_MS));
+      const delay = startTime + (i + 1) * FRAME_MS - Date.now();
+      if (delay > 0) {
+        await new Promise((r: (value: unknown) => void) => setTimeout(r, delay));
+      }
     }
 
     this.playing = false;
