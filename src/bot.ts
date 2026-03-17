@@ -1,5 +1,5 @@
-import { Ts3Client } from './tslib';
-import {generateIdentity, IdentityData} from './tslib';
+import { Ts3Client } from './tslib/client.js';
+import {generateIdentity, IdentityData} from './tslib/identity.js';
 import { AudioPipeline, FRAME_MS } from './audio/pipeline.js';
 import type { BotConfig, TeamspeakConfig } from './config.js';
 import type {LidarrClient, LidarrArtist, LidarrAlbum, LidarrTrack, LidarrQueueItem} from './lidarr.js';
