@@ -1,0 +1,15 @@
+services:
+  ts-music-bot:
+    build: .
+    container_name: ts-music-bot
+    restart: unless-stopped
+    volumes:
+      - /music:/music
+    environment:
+      - NODE_ENV=production
+    networks:
+      - music-network
+
+networks:
+  music-network:
+    external: true
