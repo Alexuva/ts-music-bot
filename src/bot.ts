@@ -446,6 +446,7 @@ export class MusicBot {
 
   private async playTrack(track: LidarrTrack, clid: string): Promise<void> {
     const trackFile: { path: string } = await this.lidarr.getTrackFile(track.trackFileId);
+    console.log('[Bot] Playing file:', trackFile.path);
     await this.moveToUserChannel(clid);
     this.sendMessage(clid, `Reproduciendo: "${track.title}"`);
     await this.playFile(trackFile.path);
