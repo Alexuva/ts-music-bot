@@ -157,7 +157,13 @@ export class LidarrClient {
     const artists: LidarrArtist[] = await this.get<LidarrArtist[]>('/artist');
     const q: string = query.toLowerCase();
 
-    return artists.filter((a: LidarrArtist) => a.artistName.toLowerCase().includes(q));
+    const byName = artists.filter((a: LidarrArtist) => a.artistName.toLowerCase().includes(q));
+    if (byName.length > 0) return byName;
+
+    // Si no hay coincidencia por nombre, buscar en MusicBrainz y cruzar por foreignArtistId
+    const lookup: LidarrArtist[] = await this.lookupArtists(query);
+    const foreignIds = new Set(lookup.map((a: LidarrArtist) => a.foreignArtistId));
+    return artists.filter((a: LidarrArtist) => a.foreignArtistId && foreignIds.has(a.foreignArtistId));
   }
 
   async lookupArtists(query: string): Promise<LidarrArtist[]> {
