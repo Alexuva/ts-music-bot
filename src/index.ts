@@ -1,10 +1,13 @@
-import {Config, ConfigError} from './config.js';
-import {LidarrClient, LidarrError} from './lidarr.js';
+import { Config, ConfigError } from './config.js';
+import { LidarrClient, LidarrError } from './lidarr.js';
 import { MusicBot } from './bot.js';
+import { Server } from "./webhook.js";
 
 try {
   const lidarr = new LidarrClient(Config.lidarr);
-  const bot = new MusicBot(Config.bot, Config.teamspeak, lidarr);
+  const webhook = new Server(Config.webhook);
+  const bot = new MusicBot(Config.bot, Config.teamspeak, lidarr, webhook);
+  webhook.setBot = bot;
 
   console.log('[Main] Starting bot...');
   await bot.start();

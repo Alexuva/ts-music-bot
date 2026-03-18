@@ -2,7 +2,8 @@ import { Ts3Client } from './tslib/client.js';
 import {generateIdentity, IdentityData} from './tslib/identity.js';
 import { AudioPipeline, FRAME_MS } from './audio/pipeline.js';
 import type { BotConfig, TeamspeakConfig } from './config.js';
-import type {LidarrClient, LidarrArtist, LidarrAlbum, LidarrTrack, LidarrQueueItem} from './lidarr.js';
+import type { LidarrClient, LidarrArtist, LidarrAlbum, LidarrTrack, LidarrQueueItem } from './lidarr.js';
+import { Server } from "./webhook.js";
 
 type PendingType = 'artist' | 'track' | 'play' | 'queue';
 
@@ -36,7 +37,8 @@ export class MusicBot {
   constructor(
     private bot: BotConfig,
     private teamspeak: TeamspeakConfig,
-    private lidarr: LidarrClient
+    private lidarr: LidarrClient,
+    private webhook: Server
   ) {
     this.client = new Ts3Client();
     this.pipeline = new AudioPipeline();
@@ -308,6 +310,7 @@ export class MusicBot {
     await this.lidarr.monitorAlbum(result.album.id);
     await this.lidarr.searchAlbum(result.album.id);
     this.sendMessage(clid, `[b]${result.track.title}[/b] (${result.album.title}) en cola para descarga. Te aviso cuando esté listo.`);
+    if (this.webhook) this.webhook.addPetition(result.album.id, clid);
   }
 
   private async addToQueue(track: LidarrTrack, clid: string): Promise<void> {
@@ -515,7 +518,7 @@ export class MusicBot {
     }
   }
 
-  private sendMessage(clid: string, message: string): void {
+  public sendMessage(clid: string, message: string): void {
     const lines: string[] = message.split('\n').filter((l: string): boolean => l.trim() !== '');
     for (const line of lines) {
       const escaped: string = line
