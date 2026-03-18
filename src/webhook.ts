@@ -44,9 +44,12 @@ export class Server {
 
       res.sendStatus(200);
 
-      if (!req.body["albums"] || !this.bot) return;
+      if (!this.bot) return;
 
-      const [{id, title}] = req.body["albums"];
+      const albumData = req.body["albums"]?.[0] ?? req.body["album"];
+      if (!albumData) return;
+
+      const { id, title } = albumData;
       const { name } = req.body["artist"];
       const clid: string | undefined = this.petitions.get(id);
 
