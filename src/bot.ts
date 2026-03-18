@@ -325,11 +325,12 @@ export class MusicBot {
 
     if (!this.isPlaying) {
       await this.moveToUserChannel(clid);
-      await this.runQueue(clid);
+      this.runQueue(clid);
     }
   }
 
   private async runQueue(clid: string): Promise<void> {
+    if (this.isPlaying) return;
     this.isPlaying = true;
 
     while (this.playQueue.length > 0) {
