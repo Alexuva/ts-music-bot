@@ -73,7 +73,7 @@ export class MusicBot {
         await this.handleCommand(command, args, clid);
       } catch (err: any) {
         console.error(`[Bot] Error handling !${command}:`, err.message);
-        this.sendMessage(clid, `❌**Error:** ${err.message}`);
+        this.sendMessage(clid, `❌ **Error:** ${err.message}`);
       }
     });
 
@@ -125,7 +125,7 @@ export class MusicBot {
     const localTracks: LidarrTrack[] = tracks.filter(t => t.hasFile);
 
     if (localTracks.length === 0) {
-      this.sendMessage(clid, `⚠️**${artistQuery} - ${trackQuery}** no está en la biblioteca.\nUsa **${this.bot.command_prefix}search ${artistQuery}** para agregarlo.`);
+      this.sendMessage(clid, `⚠️ **${artistQuery} - ${trackQuery}** no está en la biblioteca.\nUsa **${this.bot.command_prefix}search ${artistQuery}** para agregarlo.`);
       return;
     }
 
@@ -159,7 +159,7 @@ export class MusicBot {
     const results: LidarrArtist[] = await this.lidarr.lookupArtists(query);
 
     if (results.length === 0) {
-      this.sendMessage(clid, `⚠️No se encontró ningún artista con ese nombre.`);
+      this.sendMessage(clid, `⚠️ No se encontró ningún artista con ese nombre.`);
       return;
     }
 
@@ -181,7 +181,7 @@ export class MusicBot {
     const pending: PendingSearch|undefined = this.pendingSearches.get(clid);
 
     if (!pending) {
-      this.sendMessage(clid, '⚠️No hay búsqueda pendiente.');
+      this.sendMessage(clid, '⚠️ No hay búsqueda pendiente.');
       return;
     }
 
@@ -230,7 +230,7 @@ export class MusicBot {
     const localTracks: LidarrTrack[] = tracks.filter((t: LidarrTrack): boolean => t.hasFile);
 
     if (localTracks.length === 0) {
-      this.sendMessage(clid, `⚠️**${trackQuery}** no está descargada. Usa **${this.bot.command_prefix}download** primero.`);
+      this.sendMessage(clid, `⚠️ **${trackQuery}** no está descargada. Usa **${this.bot.command_prefix}download** primero.`);
       return;
     }
 
@@ -267,7 +267,7 @@ export class MusicBot {
 
     const localArtists: LidarrArtist[] = await this.lidarr.searchLocalArtists(artistQuery);
     if (localArtists.length === 0) {
-      this.sendMessage(clid, `⚠️**${artistQuery}** no está en la biblioteca. Usa **${this.bot.command_prefix}search "${artistQuery}"** primero.`);
+      this.sendMessage(clid, `⚠️ **${artistQuery}** no está en la biblioteca. Usa **${this.bot.command_prefix}search "${artistQuery}"** primero.`);
       return;
     }
 
@@ -288,7 +288,7 @@ export class MusicBot {
     }
 
     if (matches.length === 0) {
-      this.sendMessage(clid, `⚠️No se encontró **${trackQuery}** en la discografía de **${localArtists[0].artistName}**.`);
+      this.sendMessage(clid, `⚠️ No se encontró **${trackQuery}** en la discografía de **${localArtists[0].artistName}**.`);
       return;
     }
 
@@ -342,7 +342,7 @@ export class MusicBot {
 
   private async handleSkip(clid: string): Promise<void> {
     if (!this.isPlaying) {
-      this.sendMessage(clid, '⚠️No hay nada reproduciendo.');
+      this.sendMessage(clid, '⚠️ No hay nada reproduciendo.');
       return;
     }
     const current: string|undefined = this.currentTrack?.split('/').pop();
@@ -533,7 +533,7 @@ export class MusicBot {
   private async handleStatus(clid: string): Promise<void> {
     const queue: LidarrQueueItem[] = await this.lidarr.getQueue();
     if (queue.length === 0) {
-      this.sendMessage(clid, '⚠️No hay nada en la cola de descarga.');
+      this.sendMessage(clid, '⚠️ No hay nada en la cola de descarga.');
       return;
     }
     const lines: string[] = queue.map((item: LidarrQueueItem, i: number): string => {

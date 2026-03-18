@@ -38,26 +38,25 @@ export class Server {
 
   private loadRoutes(): void {
     this.app.post('/webhook', (req, res) => {
-
-      console.log('[Webhook] Received request');
+      const eventType: string = req.body["eventType"];
+      console.log('[Webhook] Received:', eventType);
       console.log(req.body);
 
-      if (req.body["eventType"] !==  'Download') return res.sendStatus(200);
-      if (!req.body["albums"]) return res.sendStatus(200);
+      res.sendStatus(200);
+
+      if (!req.body["albums"] || !this.bot) return;
 
       const [{id, title}] = req.body["albums"];
-      if (!this.petitions.has(id)) return res.sendStatus(200);
-
-      const clid: string = this.petitions.get(id)!;
       const { name } = req.body["artist"];
+      const clid: string | undefined = this.petitions.get(id);
 
-      if (!this.bot) return res.sendStatus(200);
+      if (!clid) return;
 
-      this.bot.sendMessage(clid, `✓ **${title}** de **${name}** ya está disponible.\nUsa **!play ${name} - <cancion>** para escucharla.`);
-      this.petitions.delete(id);
-
-      console.log(req.body);
-      res.sendStatus(200);
+      if (eventType === 'Grab') this.bot.sendMessage(clid, `⏳ Descargando **${title}** de **${name}**...`);
+      if (eventType === 'Download') {
+        this.bot.sendMessage(clid, `✅ **${title}** de **${name}** ya está disponible.\nUsa **!play ${name} - <cancion>** para escucharla.`);
+        this.petitions.delete(id);
+      }
     });
   }
 
