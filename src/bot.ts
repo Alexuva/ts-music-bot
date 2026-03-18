@@ -522,7 +522,7 @@ export class MusicBot {
     const escaped: string = message
       .replace(/\\/g, '\\\\')
       .replace(/\|/g, '\\p')
-      .replace(/\n/g, '\\n')
+      .replace(/\n/g, '\\n\\n')
       .replace(/ /g, '\\s');
     const cmd = `sendtextmessage targetmode=1 target=${clid} msg=${escaped}`;
     this.client.sendCommand(cmd);
