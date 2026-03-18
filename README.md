@@ -4,7 +4,7 @@ A music bot for TeamSpeak integrated with Lidarr and Tubifarry. Search, download
 
 ## Features
 
-- Music playback using Opus codec at 96kbps
+- Music playback using Opus codec (audio mode)
 - Lidarr integration for music library management
 - Playback queue
 - Volume control
