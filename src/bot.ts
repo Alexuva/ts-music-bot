@@ -309,7 +309,7 @@ export class MusicBot {
   private async downloadTrack(result: TrackResult, clid: string): Promise<void> {
     await this.lidarr.monitorAlbum(result.album.id);
     await this.lidarr.searchAlbum(result.album.id);
-    this.sendMessage(clid, `**${result.track.title}** (${result.album.title}) en cola para descarga. Te aviso cuando esté listo.`);
+    this.sendMessage(clid, `**${result.track.title}** (${result.album.title}) en cola para descarga.\nTe aviso cuando esté listo.`);
     if (this.webhook) this.webhook.addPetition(result.album.id, clid);
   }
 
@@ -519,15 +519,13 @@ export class MusicBot {
   }
 
   public sendMessage(clid: string, message: string): void {
-    const lines: string[] = message.split('\n').filter((l: string): boolean => l.trim() !== '');
-    for (const line of lines) {
-      const escaped: string = line
-        .replace(/\\/g, '\\\\')
-        .replace(/\|/g, '\\p')
-        .replace(/ /g, '\\s');
-      const cmd = `sendtextmessage targetmode=1 target=${clid} msg=${escaped}`;
-      this.client.sendCommand(cmd);
-    }
+    const escaped: string = message
+      .replace(/\\/g, '\\\\')
+      .replace(/\|/g, '\\p')
+      .replace(/\n/g, '\\n')
+      .replace(/ /g, '\\s');
+    const cmd = `sendtextmessage targetmode=1 target=${clid} msg=${escaped}`;
+    this.client.sendCommand(cmd);
   }
 
   private async handleStatus(clid: string): Promise<void> {
