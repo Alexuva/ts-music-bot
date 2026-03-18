@@ -5,11 +5,11 @@ import type { BotConfig, TeamspeakConfig } from './config.js';
 import type { LidarrClient, LidarrArtist, LidarrAlbum, LidarrTrack, LidarrQueueItem } from './lidarr.js';
 import { Server } from "./webhook.js";
 
-type PendingType = 'artist' | 'track' | 'play' | 'queue';
+type PendingType = 'artist' | 'track' | 'play' | 'queue' | 'info_artist' | 'info_album';
 
 interface PendingSearch {
   type: PendingType;
-  results: Array<{ label: string; data: LidarrArtist | TrackResult | LidarrTrack }>;
+  results: Array<{ label: string; data: LidarrArtist | TrackResult | LidarrTrack | LidarrAlbum }>;
 }
 
 interface TrackResult {
@@ -99,6 +99,7 @@ export class MusicBot {
       case 'np':
       case 'nowplaying':    this.handleNowPlaying(clid); break;
 
+      case 'info':          await this.handleInfo(args, clid); break;
       case 'status':        await this.handleStatus(clid); break;
       case 'help':          this.handleHelp(clid); break;
     }
@@ -192,7 +193,7 @@ export class MusicBot {
     }
 
     this.pendingSearches.delete(clid);
-    const chosen: { label: string, data: LidarrArtist | TrackResult | LidarrTrack } = pending.results[idx];
+    const chosen: { label: string, data: LidarrArtist | TrackResult | LidarrTrack | LidarrAlbum } = pending.results[idx];
 
     if (pending.type === 'artist') {
       await this.addArtistAndNotify(chosen.data as LidarrArtist, clid);
@@ -202,6 +203,10 @@ export class MusicBot {
       await this.playTrack(chosen.data as unknown as LidarrTrack, clid);
     } else if (pending.type === 'queue') {
       await this.addToQueue(chosen.data as unknown as LidarrTrack, clid);
+    } else if (pending.type === 'info_artist') {
+      await this.showAlbums(chosen.data as LidarrArtist, clid);
+    } else if (pending.type === 'info_album') {
+      await this.showTracks(chosen.data as unknown as LidarrAlbum, clid);
     }
   }
 
@@ -419,6 +424,66 @@ export class MusicBot {
     this.sendMessage(clid, `▶ **${name}**`);
   }
 
+  private async handleInfo(query: string, clid: string): Promise<void> {
+    if (!query) {
+      this.sendMessage(clid, `**Uso:** ${this.bot.command_prefix}info <artista>`);
+      return;
+    }
+
+    const localArtists: LidarrArtist[] = await this.lidarr.searchLocalArtists(query);
+
+    if (localArtists.length === 0) {
+      this.sendMessage(clid, `⚠️ **${query}** no está en la biblioteca.\nUsa **${this.bot.command_prefix}search ${query}** para agregarlo.`);
+      return;
+    }
+
+    if (localArtists.length === 1) {
+      await this.showAlbums(localArtists[0], clid);
+      return;
+    }
+
+    const options = localArtists.slice(0, 5).map((a: LidarrArtist, i: number) => ({
+      label: `${i + 1}. ${a.artistName}`,
+      data: a as LidarrArtist
+    }));
+
+    this.pendingSearches.set(clid, { type: 'info_artist', results: options });
+    this.sendMessage(clid, [`**Varios artistas encontrados:**`, ...options.map(o => o.label), `Usa **${this.bot.command_prefix}pick <numero>** para seleccionar`].join('\n'));
+  }
+
+  private async showAlbums(artist: LidarrArtist, clid: string): Promise<void> {
+    const albums: LidarrAlbum[] = await this.lidarr.getAlbums(artist.id!);
+
+    if (albums.length === 0) {
+      this.sendMessage(clid, `⚠️ **${artist.artistName}** no tiene álbumes en la biblioteca.`);
+      return;
+    }
+
+    const options = albums.slice(0, 10).map((a: LidarrAlbum, i: number) => ({
+      label: `${i + 1}. ${a.title} (${a.releaseDate?.substring(0, 4) ?? '?'})`,
+      data: a as LidarrAlbum
+    }));
+
+    this.pendingSearches.set(clid, { type: 'info_album', results: options });
+    this.sendMessage(clid, [`**${artist.artistName} — Álbumes:**`, ...options.map(o => o.label), `Usa **${this.bot.command_prefix}pick <numero>** para ver las canciones`].join('\n'));
+  }
+
+  private async showTracks(album: LidarrAlbum, clid: string): Promise<void> {
+    const tracks: LidarrTrack[] = await this.lidarr.getTracksForAlbum(album.id);
+
+    if (tracks.length === 0) {
+      this.sendMessage(clid, `⚠️ No hay canciones para **${album.title}**.`);
+      return;
+    }
+
+    const lines = tracks.map((t: LidarrTrack, i: number) => {
+      const status = t.hasFile ? '✅' : '⬇️';
+      return `${status} ${i + 1}. ${t.title}`;
+    });
+
+    this.sendMessage(clid, [`**${album.title}:**`, ...lines, `\nUsa **${this.bot.command_prefix}play <artista> - <cancion>** para reproducir\nUsa **${this.bot.command_prefix}download <artista> - <cancion>** para descargar`].join('\n'));
+  }
+
   private handleHelp(clid: string): void {
     const p = this.bot.command_prefix;
     this.sendMessage(clid, [
@@ -434,6 +499,7 @@ export class MusicBot {
       `**${p}move** <canal>  →  Mover bot a un canal`,
       `**${p}vol** <0-100>  →  Volumen`,
       `**${p}np**  →  Qué suena`,
+      `**${p}info** <artista>  →  Ver álbumes y canciones`,
       `**${p}status**  →  Cola de descargas`,
     ].join('\n'));
   }
