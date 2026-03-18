@@ -73,7 +73,7 @@ export class MusicBot {
         await this.handleCommand(command, args, clid);
       } catch (err: any) {
         console.error(`[Bot] Error handling !${command}:`, err.message);
-        this.sendMessage(clid, `[color=#FF4444][b]Error:[/b] ${err.message}[/color]`);
+        this.sendMessage(clid, `❌**Error:** ${err.message}`);
       }
     });
 
@@ -119,13 +119,13 @@ export class MusicBot {
     const artistQuery: string = parts[0].trim();
     const trackQuery: string = parts.slice(1).join(' - ').trim();
 
-    this.sendMessage(clid, `[b]Buscando:[/b] ${artistQuery} - ${trackQuery}...`);
+    this.sendMessage(clid, `**Buscando:** ${artistQuery} - ${trackQuery}...`);
 
     const tracks: LidarrTrack[] = await this.lidarr.searchTracks(trackQuery);
     const localTracks: LidarrTrack[] = tracks.filter(t => t.hasFile);
 
     if (localTracks.length === 0) {
-      this.sendMessage(clid, `[color=#FFA500][b]${artistQuery} - ${trackQuery}[/b] no está en la biblioteca.\nUsa [b]${this.bot.command_prefix}search ${artistQuery}[/b] para agregarlo.[/color]`);
+      this.sendMessage(clid, `⚠️**${artistQuery} - ${trackQuery}** no está en la biblioteca.\nUsa **${this.bot.command_prefix}search ${artistQuery}** para agregarlo.`);
       return;
     }
 
@@ -140,7 +140,7 @@ export class MusicBot {
     }));
 
     this.pendingSearches.set(clid, { type: 'play', results: options });
-    this.sendMessage(clid, [`[b]Varias canciones encontradas:[/b]`, ...options.map((o: { label: string, data: LidarrTrack }): string => o.label), `Usa [b]${this.bot.command_prefix}pick <numero>[/b] para seleccionar`].join('\n'));
+    this.sendMessage(clid, [`**Varias canciones encontradas:**`, ...options.map((o: { label: string, data: LidarrTrack }): string => o.label), `Usa **${this.bot.command_prefix}pick <numero>** para seleccionar`].join('\n'));
   }
 
   private async handleSearch(query: string, clid: string): Promise<void> {
@@ -151,15 +151,15 @@ export class MusicBot {
 
     const localArtists: LidarrArtist[] = await this.lidarr.searchLocalArtists(query);
     if (localArtists.length > 0) {
-      this.sendMessage(clid, `[b]${localArtists[0].artistName}[/b] ya está en la biblioteca.\nUsa [b]${this.bot.command_prefix}download ${localArtists[0].artistName} - <cancion>[/b] para descargar.`);
+      this.sendMessage(clid, `**${localArtists[0].artistName}** ya está en la biblioteca.\nUsa **${this.bot.command_prefix}download ${localArtists[0].artistName} - <cancion>** para descargar.`);
       return;
     }
 
-    this.sendMessage(clid, `[b]Buscando:[/b] ${query} en MusicBrainz...`);
+    this.sendMessage(clid, `**Buscando:** ${query} en MusicBrainz...`);
     const results: LidarrArtist[] = await this.lidarr.lookupArtists(query);
 
     if (results.length === 0) {
-      this.sendMessage(clid, `[color=#FFA500]No se encontró ningún artista con ese nombre.[/color]`);
+      this.sendMessage(clid, `⚠️No se encontró ningún artista con ese nombre.`);
       return;
     }
 
@@ -174,20 +174,20 @@ export class MusicBot {
     }));
 
     this.pendingSearches.set(clid, { type: 'artist', results: options });
-    this.sendMessage(clid, [`[b]Varios resultados:[/b]`, ...options.map((o: {label: string, data: LidarrArtist}): string => o.label), `Usa [b]${this.bot.command_prefix}pick <numero>[/b] para seleccionar`].join('\n'));
+    this.sendMessage(clid, [`**Varios resultados:**`, ...options.map((o: {label: string, data: LidarrArtist}): string => o.label), `Usa **${this.bot.command_prefix}pick <numero>** para seleccionar`].join('\n'));
   }
 
   private async handlePick(args: string, clid: string): Promise<void> {
     const pending: PendingSearch|undefined = this.pendingSearches.get(clid);
 
     if (!pending) {
-      this.sendMessage(clid, '[color=#FFA500]No hay búsqueda pendiente.[/color]');
+      this.sendMessage(clid, '⚠️No hay búsqueda pendiente.');
       return;
     }
 
     const idx: number = parseInt(args) - 1;
     if (isNaN(idx) || idx < 0 || idx >= pending.results.length) {
-      this.sendMessage(clid, `Número inválido. Elige entre [b]1[/b] y [b]${pending.results.length}[/b]`);
+      this.sendMessage(clid, `Número inválido. Elige entre **1** y **${pending.results.length}**`);
       return;
     }
 
@@ -214,8 +214,8 @@ export class MusicBot {
         return;
       }
 
-      const lines: string[] = this.playQueue.map((item: QueueItem, i: number): string => `${i + 1}. [b]${item.track.title}[/b]`);
-      this.sendMessage(clid, [`[b]Cola de reproducción:[/b]`, ...lines].join('\n'));
+      const lines: string[] = this.playQueue.map((item: QueueItem, i: number): string => `${i + 1}. **${item.track.title}**`);
+      this.sendMessage(clid, [`**Cola de reproducción:**`, ...lines].join('\n'));
       return;
     }
 
@@ -230,7 +230,7 @@ export class MusicBot {
     const localTracks: LidarrTrack[] = tracks.filter((t: LidarrTrack): boolean => t.hasFile);
 
     if (localTracks.length === 0) {
-      this.sendMessage(clid, `[color=#FFA500][b]${trackQuery}[/b] no está descargada. Usa [b]${this.bot.command_prefix}download[/b] primero.[/color]`);
+      this.sendMessage(clid, `⚠️**${trackQuery}** no está descargada. Usa **${this.bot.command_prefix}download** primero.`);
       return;
     }
 
@@ -245,7 +245,7 @@ export class MusicBot {
     }));
 
     this.pendingSearches.set(clid, { type: 'queue', results: options });
-    this.sendMessage(clid, [`[b]Varias canciones encontradas:[/b]`, ...options.map((o: { label: string, data: LidarrTrack }): string => o.label), `Usa [b]${this.bot.command_prefix}pick <numero>[/b] para seleccionar`].join('\n'));
+    this.sendMessage(clid, [`**Varias canciones encontradas:**`, ...options.map((o: { label: string, data: LidarrTrack }): string => o.label), `Usa **${this.bot.command_prefix}pick <numero>** para seleccionar`].join('\n'));
   }
 
   // !download — busca y descarga una canción via Lidarr/Soularr
@@ -267,14 +267,14 @@ export class MusicBot {
 
     const localArtists: LidarrArtist[] = await this.lidarr.searchLocalArtists(artistQuery);
     if (localArtists.length === 0) {
-      this.sendMessage(clid, `[color=#FFA500][b]${artistQuery}[/b] no está en la biblioteca. Usa [b]${this.bot.command_prefix}search "${artistQuery}"[/b] primero.[/color]`);
+      this.sendMessage(clid, `⚠️**${artistQuery}** no está en la biblioteca. Usa **${this.bot.command_prefix}search "${artistQuery}"** primero.`);
       return;
     }
 
     const artistId: number = localArtists[0].id!;
     const albums: LidarrAlbum[] = await this.lidarr.getAlbums(artistId);
 
-    this.sendMessage(clid, `[b]Buscando:[/b] ${trackQuery} en la discografía de ${localArtists[0].artistName}...`);
+    this.sendMessage(clid, `**Buscando:** ${trackQuery} en la discografía de ${localArtists[0].artistName}...`);
 
     const matches: TrackResult[] = [];
 
@@ -288,7 +288,7 @@ export class MusicBot {
     }
 
     if (matches.length === 0) {
-      this.sendMessage(clid, `[color=#FFA500]No se encontró [b]${trackQuery}[/b] en la discografía de [b]${localArtists[0].artistName}[/b].[/color]`);
+      this.sendMessage(clid, `⚠️No se encontró **${trackQuery}** en la discografía de **${localArtists[0].artistName}**.`);
       return;
     }
 
@@ -303,20 +303,20 @@ export class MusicBot {
     }));
 
     this.pendingSearches.set(clid, { type: 'track', results: options });
-    this.sendMessage(clid, [`[b]Varias canciones encontradas:[/b]`, ...options.map((o: {label: string, data: TrackResult}): string => o.label), `Usa [b]${this.bot.command_prefix}pick <numero>[/b] para seleccionar`].join('\n'));
+    this.sendMessage(clid, [`**Varias canciones encontradas:**`, ...options.map((o: {label: string, data: TrackResult}): string => o.label), `Usa **${this.bot.command_prefix}pick <numero>** para seleccionar`].join('\n'));
   }
 
   private async downloadTrack(result: TrackResult, clid: string): Promise<void> {
     await this.lidarr.monitorAlbum(result.album.id);
     await this.lidarr.searchAlbum(result.album.id);
-    this.sendMessage(clid, `[b]${result.track.title}[/b] (${result.album.title}) en cola para descarga. Te aviso cuando esté listo.`);
+    this.sendMessage(clid, `**${result.track.title}** (${result.album.title}) en cola para descarga. Te aviso cuando esté listo.`);
     if (this.webhook) this.webhook.addPetition(result.album.id, clid);
   }
 
   private async addToQueue(track: LidarrTrack, clid: string): Promise<void> {
     const trackFile: { path: string } = await this.lidarr.getTrackFile(track.trackFileId);
     this.playQueue.push({ track, trackFilePath: trackFile.path });
-    this.sendMessage(clid, `[b]+[/b] [b]${track.title}[/b] añadido a la cola (posición ${this.playQueue.length})`);
+    this.sendMessage(clid, `**+** **${track.title}** añadido a la cola (posición ${this.playQueue.length})`);
 
     if (!this.isPlaying) {
       await this.moveToUserChannel(clid);
@@ -330,7 +330,7 @@ export class MusicBot {
     while (this.playQueue.length > 0) {
       const item: QueueItem = this.playQueue[0];
       this.currentTrack = item.trackFilePath;
-      this.sendMessage(clid, `▶ [b]${item.track.title}[/b]`);
+      this.sendMessage(clid, `▶ **${item.track.title}**`);
       await this.playFile(item.trackFilePath);
       this.playQueue.shift();
     }
@@ -342,22 +342,22 @@ export class MusicBot {
 
   private async handleSkip(clid: string): Promise<void> {
     if (!this.isPlaying) {
-      this.sendMessage(clid, '[color=#FFA500]No hay nada reproduciendo.[/color]');
+      this.sendMessage(clid, '⚠️No hay nada reproduciendo.');
       return;
     }
     const current: string|undefined = this.currentTrack?.split('/').pop();
-    this.sendMessage(clid, `⏭ Saltando [b]${current}[/b]`);
+    this.sendMessage(clid, `⏭ Saltando **${current}**`);
     this.playing = false;
   }
 
   private async addArtistAndNotify(artist: LidarrArtist, clid: string): Promise<void> {
-    this.sendMessage(clid, `Añadiendo [b]${artist.artistName}[/b]... esto puede tardar unos segundos.`);
+    this.sendMessage(clid, `Añadiendo **${artist.artistName}**... esto puede tardar unos segundos.`);
 
     const added: LidarrArtist = await this.lidarr.addArtist(artist);
     const artistId: number|undefined = added.id;
 
     if (!artistId) {
-      this.sendMessage(clid, `Error al agregar [b]${artist.artistName}[/b].`);
+      this.sendMessage(clid, `Error al agregar **${artist.artistName}**.`);
       return;
     }
 
@@ -377,11 +377,11 @@ export class MusicBot {
     }
 
     if (!tracksLoaded) {
-      this.sendMessage(clid, `[b]${artist.artistName}[/b] agregado, pero los metadatos tardan en cargar. Intenta [b]${this.bot.command_prefix}download[/b] en un momento.`);
+      this.sendMessage(clid, `**${artist.artistName}** agregado, pero los metadatos tardan en cargar. Intenta **${this.bot.command_prefix}download** en un momento.`);
       return;
     }
 
-    this.sendMessage(clid, `[b]${artist.artistName}[/b] listo. Usa [b]${this.bot.command_prefix}download ${artist.artistName} - <cancion>[/b] para descargar.`);
+    this.sendMessage(clid, `**${artist.artistName}** listo. Usa **${this.bot.command_prefix}download ${artist.artistName} - <cancion>** para descargar.`);
   }
 
   private handleStop(): void {
@@ -394,18 +394,18 @@ export class MusicBot {
 
   private handleVolume(args: string, clid: string): void {
     if (!args) {
-      this.sendMessage(clid, `Volumen: [b]${this.volume}%[/b]`);
+      this.sendMessage(clid, `Volumen: **${this.volume}%**`);
       return;
     }
 
     const vol: number = parseInt(args);
     if (isNaN(vol) || vol < 0 || vol > 100) {
-      this.sendMessage(clid, `[b]Uso:[/b] ${this.bot.command_prefix}vol <0-100>`);
+      this.sendMessage(clid, `**Uso:** ${this.bot.command_prefix}vol <0-100>`);
       return;
     }
 
     this.volume = vol;
-    this.sendMessage(clid, `Volumen ajustado a [b]${vol}%[/b]`);
+    this.sendMessage(clid, `Volumen ajustado a **${vol}%**`);
   }
 
   private handleNowPlaying(clid: string): void {
@@ -416,25 +416,25 @@ export class MusicBot {
     }
 
     const name: string|undefined = this.currentTrack.split('/').pop();
-    this.sendMessage(clid, `▶ [b]${name}[/b]`);
+    this.sendMessage(clid, `▶ **${name}**`);
   }
 
   private handleHelp(clid: string): void {
     const p = this.bot.command_prefix;
     this.sendMessage(clid, [
-      '[b]── Comandos disponibles ──[/b]',
-      `[b]${p}play[/b] <artista> - <cancion>  →  Reproducir`,
-      `[b]${p}search[/b] <artista>  →  Agregar artista a la biblioteca`,
-      `[b]${p}download[/b] <artista> - <cancion>  →  Descargar canción`,
-      `[b]${p}queue[/b] <artista> - <cancion>  →  Añadir a la cola`,
-      `[b]${p}queue[/b]  →  Ver cola actual`,
-      `[b]${p}pick[/b] <n>  →  Elegir de resultados`,
-      `[b]${p}skip[/b]  →  Saltar canción actual`,
-      `[b]${p}stop[/b]  →  Parar y vaciar cola`,
-      `[b]${p}move[/b] <canal>  →  Mover bot a un canal`,
-      `[b]${p}vol[/b] <0-100>  →  Volumen`,
-      `[b]${p}np[/b]  →  Qué suena`,
-      `[b]${p}status[/b]  →  Cola de descargas`,
+      '**── Comandos disponibles ──**',
+      `**${p}play** <artista> - <cancion>  →  Reproducir`,
+      `**${p}search** <artista>  →  Agregar artista a la biblioteca`,
+      `**${p}download** <artista> - <cancion>  →  Descargar canción`,
+      `**${p}queue** <artista> - <cancion>  →  Añadir a la cola`,
+      `**${p}queue**  →  Ver cola actual`,
+      `**${p}pick** <n>  →  Elegir de resultados`,
+      `**${p}skip**  →  Saltar canción actual`,
+      `**${p}stop**  →  Parar y vaciar cola`,
+      `**${p}move** <canal>  →  Mover bot a un canal`,
+      `**${p}vol** <0-100>  →  Volumen`,
+      `**${p}np**  →  Qué suena`,
+      `**${p}status**  →  Cola de descargas`,
     ].join('\n'));
   }
 
@@ -445,7 +445,7 @@ export class MusicBot {
     }
 
     await this.moveToChannel(channelName);
-    this.sendMessage(clid, `Moviéndome a [b]${channelName}[/b]`);
+    this.sendMessage(clid, `Moviéndome a **${channelName}**`);
   }
 
   private async playTrack(track: LidarrTrack, clid: string): Promise<void> {
@@ -533,14 +533,14 @@ export class MusicBot {
   private async handleStatus(clid: string): Promise<void> {
     const queue: LidarrQueueItem[] = await this.lidarr.getQueue();
     if (queue.length === 0) {
-      this.sendMessage(clid, '[color=#FFA500]No hay nada en la cola de descarga.[/color]');
+      this.sendMessage(clid, '⚠️No hay nada en la cola de descarga.');
       return;
     }
     const lines: string[] = queue.map((item: LidarrQueueItem, i: number): string => {
       const state: string = item.trackedDownloadState ?? item.status;
       const timeLeft: string = item.timeleft ? ` (${item.timeleft.split('.')[0]})` : '';
-      return `${i + 1}. [b]${item.title.split(' - ').slice(0, 2).join(' - ')}[/b]: ${state}${timeLeft}`;
+      return `${i + 1}. **${item.title.split(' - ').slice(0, 2).join(' - ')}**: ${state}${timeLeft}`;
     });
-    this.sendMessage(clid, [`[b]Cola de descargas:[/b]`, ...lines].join('\n'));
+    this.sendMessage(clid, [`**Cola de descargas:**`, ...lines].join('\n'));
   }
 }

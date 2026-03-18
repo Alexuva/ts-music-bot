@@ -38,6 +38,10 @@ export class Server {
 
   private loadRoutes(): void {
     this.app.post('/webhook', (req, res) => {
+
+      console.log('[Webhook] Received request');
+      console.log(req.body);
+
       if (req.body["eventType"] !==  'Download') return res.sendStatus(200);
       if (!req.body["albums"]) return res.sendStatus(200);
 
@@ -49,7 +53,7 @@ export class Server {
 
       if (!this.bot) return res.sendStatus(200);
 
-      this.bot.sendMessage(clid, `✓ [b]${title}[/b] de [b]${name}[/b] ya está disponible.\nUsa [b]!play ${name} - <cancion>[/b] para escucharla.`);
+      this.bot.sendMessage(clid, `✓ **${title}** de **${name}** ya está disponible.\nUsa **!play ${name} - <cancion>** para escucharla.`);
       this.petitions.delete(id);
 
       console.log(req.body);
