@@ -1,8 +1,8 @@
-import {generateIdentity, IdentityData, Ts3Client} from "./tslib";
-import {AudioPipeline, FRAME_MS} from "./audio/pipeline";
-import type {BotConfig, TeamspeakConfig} from "./config";
-import type {LidarrAlbum, LidarrArtist, LidarrClient, LidarrQueueItem, LidarrTrack} from "./lidarr";
-import {Server} from "./webhook";
+import {generateIdentity, IdentityData, Ts3Client} from "./tslib/index.js";
+import {AudioPipeline, FRAME_MS} from "./audio/pipeline.js";
+import type {BotConfig, TeamspeakConfig} from "./config.js";
+import type {LidarrAlbum, LidarrArtist, LidarrClient, LidarrQueueItem, LidarrTrack} from "./lidarr.js";
+import {Server} from "./webhook.js";
 
 type PendingType = 'info_artist' | 'new_artist' | 'info_album' | 'info_tracks';
 
