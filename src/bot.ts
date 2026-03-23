@@ -270,7 +270,9 @@ export class MusicBot {
       const item: QueueItem = this.playQueue[0];
       this.currentTrack = item.trackFilePath;
       this.sendMessage(clid, `▶ **${item.track.title}**`);
+      this.playing = true;
       await this.playFile(item.trackFilePath);
+      this.playing = false;
       this.playQueue.shift();
     }
 
