@@ -153,6 +153,10 @@ export class LidarrClient {
     return this.get<{ path: string }>(`/trackfile/${trackFileId}`);
   }
 
+  async getAllArtists(): Promise<LidarrArtist[]> {
+    return this.get<LidarrArtist[]>('/artist');
+  }
+
   async searchLocalArtists(query: string): Promise<LidarrArtist[]> {
     const artists: LidarrArtist[] = await this.get<LidarrArtist[]>('/artist');
     const q: string = query.toLowerCase();

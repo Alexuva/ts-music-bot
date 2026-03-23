@@ -6,9 +6,12 @@ import {Server} from "./webhook.js";
 
 type PendingType = 'info_artist' | 'new_artist' | 'info_album' | 'info_tracks';
 
+const PAGE_SIZE = 10;
+
 interface PendingSearch {
   type: PendingType;
   results: Array<{ label: string; data: LidarrArtist | LidarrTrack | LidarrAlbum }>;
+  offset: number;
 }
 
 interface QueueItem {
@@ -125,7 +128,9 @@ export class MusicBot {
     switch (command) {
       case 'move':          await this.handleMove(args, clid); break;
       case 'play':          await this.handlePlay(args, clid); break;
+      case 'library':       await this.handleLibrary(clid); break;
       case 'pick':          await this.handlePick(args, clid); break;
+      case 'more':          await this.handleMore(clid); break;
       case 'skip':          await this.handleSkip(clid); break;
       case 'stop':          this.handleStop(); break;
 
@@ -195,13 +200,18 @@ export class MusicBot {
       return;
     }
 
-    const options = albums.slice(0, 10).map((a: LidarrAlbum, i: number) => ({
+    const options = albums.map((a: LidarrAlbum, i: number) => ({
       label: `${i + 1}. ${a.title} (${a.releaseDate?.substring(0, 4) ?? '?'})`,
       data: a as LidarrAlbum
     }));
 
-    this.pendingSearches.set(clid, { type: 'info_album', results: options });
-    this.sendMessage(clid, [`**${artist.artistName} — Álbumes:**`, ...options.map(o => o.label), `Usa **${this.bot.command_prefix}pick <numero>** para ver las canciones`].join('\n'));
+    this.pendingSearches.set(clid, { type: 'info_album', results: options, offset: 0 });
+    const page = options.slice(0, PAGE_SIZE);
+    const hasMore = options.length > PAGE_SIZE;
+    const footer = hasMore
+      ? `Usa **${this.bot.command_prefix}pick <numero>** para ver las canciones · **${this.bot.command_prefix}more** para ver más`
+      : `Usa **${this.bot.command_prefix}pick <numero>** para ver las canciones`;
+    this.sendMessage(clid, [`**${artist.artistName} — Álbumes (${options.length}):**`, ...page.map(o => o.label), footer].join('\n'));
   }
 
   /**
@@ -223,7 +233,7 @@ export class MusicBot {
       data: t as LidarrTrack
     }));
 
-    this.pendingSearches.set(clid, { type: 'info_tracks', results: options });
+    this.pendingSearches.set(clid, { type: 'info_tracks', results: options, offset: 0 });
     this.sendMessage(clid, [`**${album.title}:**`, ...options.map(o => o.label), `\nUsa **${this.bot.command_prefix}pick <n>** para reproducir\nSi la canción no está descargada, se agregará a la cola para descargar`].join('\n'));
   }
 
@@ -353,7 +363,7 @@ export class MusicBot {
         label: `${i + 1}. ${a.artistName}`,
         data: a as LidarrArtist
       }));
-      this.pendingSearches.set(clid, { type: 'info_artist', results: options });
+      this.pendingSearches.set(clid, { type: 'info_artist', results: options, offset: 0 });
       this.sendMessage(clid, [`**Varios artistas encontrados:**`, ...options.map(o => o.label), `Usa **${this.bot.command_prefix}pick <numero>** para seleccionar`].join('\n'));
       return;
     }
@@ -376,8 +386,35 @@ export class MusicBot {
       label: `${i + 1}. ${a.artistName}${a.disambiguation ? ` (${a.disambiguation})` : ''}`,
       data: a as LidarrArtist
     }));
-    this.pendingSearches.set(clid, { type: 'new_artist', results: options });
+    this.pendingSearches.set(clid, { type: 'new_artist', results: options, offset: 0 });
     this.sendMessage(clid, [`**Varios resultados:**`, ...options.map(o => o.label), `Usa **${this.bot.command_prefix}pick <numero>** para seleccionar`].join('\n'));
+  }
+
+  /**
+   * Handles the library command, shows the user the library.
+   * @param clid String with the client ID of the invoker.
+   * @private
+   */
+  private async handleLibrary(clid: string): Promise<void> {
+    const artists = await this.lidarr.getAllArtists();
+
+    if (artists.length === 0) {
+      this.sendMessage(clid, '⚠️ La biblioteca está vacía.');
+      return;
+    }
+
+    const options = artists.map((a: LidarrArtist, i: number) => ({
+      label: `${i + 1}. ${a.artistName}`,
+      data: a as LidarrArtist
+    }));
+
+    this.pendingSearches.set(clid, { type: 'info_artist', results: options, offset: 0 });
+    const page = options.slice(0, PAGE_SIZE);
+    const hasMore = options.length > PAGE_SIZE;
+    const footer = hasMore
+      ? `Usa **${this.bot.command_prefix}pick <numero>** para ver álbumes · **${this.bot.command_prefix}more** para ver más`
+      : `Usa **${this.bot.command_prefix}pick <numero>** para ver álbumes`;
+    this.sendMessage(clid, [`**Biblioteca (${artists.length} artistas):**`, ...page.map(o => o.label), footer].join('\n'));
   }
 
   /**
@@ -474,6 +511,33 @@ export class MusicBot {
     }
     const lines = this.playQueue.map((item: QueueItem, i: number) => `${i + 1}. **${item.track.title}**`);
     this.sendMessage(clid, [`**Cola de reproducción:**`, ...lines].join('\n'));
+  }
+
+  /**
+   * Handles the next page of the search results
+   * @param clid String with the client ID of the invoker.
+   * @private
+   */
+  private async handleMore(clid: string): Promise<void> {
+    const pending = this.pendingSearches.get(clid);
+    if (!pending) {
+      this.sendMessage(clid, '⚠️ Nada pendiente.');
+      return;
+    }
+
+    const newOffset = pending.offset + PAGE_SIZE;
+    if (newOffset >= pending.results.length) {
+      this.sendMessage(clid, 'No hay más resultados.');
+      return;
+    }
+
+    pending.offset = newOffset;
+    const page = pending.results.slice(newOffset, newOffset + PAGE_SIZE);
+    const hasMore = newOffset + PAGE_SIZE < pending.results.length;
+    const footer = hasMore
+      ? `Usa **${this.bot.command_prefix}pick <numero>** para seleccionar · **${this.bot.command_prefix}more** para ver más`
+      : `Usa **${this.bot.command_prefix}pick <numero>** para seleccionar`;
+    this.sendMessage(clid, [...page.map(o => o.label), footer].join('\n'));
   }
 
   /**

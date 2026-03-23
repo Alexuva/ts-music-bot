@@ -57,7 +57,7 @@ export class Server {
 
       if (eventType === 'Grab') this.bot.sendMessage(clid, `⏳ Descargando **${title}** de **${name}**...`);
       if (eventType === 'Download') {
-        this.bot.sendMessage(clid, `✅ **${title}** de **${name}** ya está disponible.\nUsa **!play ${name} - <cancion>** para escucharla.`);
+        this.bot.sendMessage(clid, `✅ **${title}** de **${name}** ya está disponible.\nUsa **!play ${name}** para escucharla.`);
         this.petitions.delete(id);
       }
     });

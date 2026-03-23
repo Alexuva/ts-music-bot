@@ -116,20 +116,29 @@ docker compose up -d
 
 | Command | Description |
 |---|---|
-| `!play <artist> - <track>` | Play a track |
-| `!search <artist>` | Add an artist to the library |
-| `!download <artist> - <track>` | Download a track |
-| `!queue <artist> - <track>` | Add to the queue |
-| `!queue` | Show current queue |
-| `!info <artist>` | Browse albums and tracks |
-| `!pick <n>` | Select from a list of results |
+| `!play <artist>` | Search for an artist and browse their albums and tracks. If the artist is not in the library, it will be added automatically. |
+| `!library` | Browse all artists in the local library |
+| `!pick <n>` | Select from the current list of results |
+| `!more` | Show next page of results |
+| `!queue` | Show current playback queue |
 | `!skip` | Skip current track |
-| `!stop` | Stop and clear the queue |
-| `!move <channel>` | Move bot to a channel |
-| `!vol <0-100>` | Set volume |
+| `!stop` | Stop playback and clear the queue |
 | `!np` | Show now playing |
+| `!vol <0-100>` | Set volume |
+| `!move <channel>` | Move bot to a channel |
 | `!status` | Show Lidarr download queue |
-| `!help` | Show help |
+| `!help` | Show available commands |
+
+### Typical flow
+
+```
+!play Evanescence
+  → shows albums
+!pick 3              (select album)
+  → shows tracks (✅ downloaded / ⬇️ not downloaded)
+!pick 5              (select track)
+  → adds to queue and plays, or triggers download if not available
+```
 
 ## Credits
 
