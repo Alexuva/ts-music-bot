@@ -753,7 +753,7 @@ export class Ts3Client extends EventEmitter {
           parsed.params.clid &&
           parseInt(parsed.params.clid) === this.clientId
         ) {
-          this.emit("clientMoved");
+          this.emit("clientMoved", parseInt(parsed.params.reasonid ?? "0"));
         }
         break;
       case "notifytextmessage":

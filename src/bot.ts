@@ -84,8 +84,8 @@ export class MusicBot {
       setTimeout(() => this.reconnect(), 5000);
     });
 
-    this.client.on('clientMoved', (): void => {
-      if (!this.isPlaying) {
+    this.client.on('clientMoved', (reasonId: number): void => {
+      if (reasonId === 4 && !this.isPlaying) {
         this.moveToChannel(this.bot.afk_channel);
       }
     });
