@@ -748,6 +748,14 @@ export class Ts3Client extends EventEmitter {
           this.cleanup();
         }
         break;
+      case "notifyclientmoved":
+        if (
+          parsed.params.clid &&
+          parseInt(parsed.params.clid) === this.clientId
+        ) {
+          this.emit("clientMoved");
+        }
+        break;
       case "notifytextmessage":
         this.emit("textMessage", parsed.params);
         break;

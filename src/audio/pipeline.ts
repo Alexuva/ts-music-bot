@@ -90,13 +90,15 @@ export class AudioPipeline {
         chunks.push(chunk);
       });
 
-      ffmpeg.stderr.on("data", () => { });
+      const stderrChunks: Buffer[] = [];
+      ffmpeg.stderr.on("data", (chunk: Buffer) => stderrChunks.push(chunk));
 
       ffmpeg.on("close", (code) => {
         if (code === 0) {
           resolve(Buffer.concat(chunks));
         } else {
-          reject(new Error(`FFmpeg exited with code ${code}`));
+          const errOutput = Buffer.concat(stderrChunks).toString().trim();
+          reject(new Error(`FFmpeg exited with code ${code}: ${errOutput}`));
         }
       });
 

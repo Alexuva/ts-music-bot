@@ -21,7 +21,7 @@ export interface LidarrTrack {
 }
 
 export interface LidarrArtist {
-  id?: number;
+  id: number;
   artistName: string;
   foreignArtistId: string;
   status: string;
