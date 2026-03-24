@@ -234,32 +234,43 @@ export class MusicBot {
     }));
 
     this.pendingSearches.set(clid, { type: 'info_tracks', results: options, offset: 0 });
-    this.sendMessage(clid, [`**${album.title}:**`, ...options.map(o => o.label), `\nUsa **${this.bot.command_prefix}pick <n>** para reproducir\nSi la canción no está descargada, se agregará a la cola para descargar`].join('\n'));
+    this.sendMessage(clid, [
+      `**${album.title}:**`,
+      ...options.map(o => o.label),
+      `Usa **${this.bot.command_prefix}pick <n>** o elige varias canciones separadas por comas (ej: ${this.bot.command_prefix}pick 1,5,3) para reproducir`,
+      `Si la canción no está descargada, se agregará a la cola para descargar`
+    ].join('\n'));
   }
 
   /**
    * Downloads a track
-   * @param result TrackResult object with the track data.
+   * @param results TrackResult object with the track data.
    * @param clid String with the client ID of the invoker.
    * @private
    */
-  private async downloadTrack(result: LidarrTrack, clid: string): Promise<void> {
-    await this.lidarr.monitorAlbum(result.albumId);
-    await this.lidarr.searchAlbum(result.albumId);
-    this.sendMessage(clid, `**${result.title}** en cola para descarga.\nTe aviso cuando esté listo.`);
-    if (this.webhook) this.webhook.addPetition(result.albumId, clid);
+  private async downloadTrack(results: LidarrTrack[], clid: string): Promise<void> {
+    const albumsToDownload: Map<number, LidarrTrack> = new Map(results.map(track => [track.albumId, track]));
+    for (const [albumId, track] of albumsToDownload) {
+        await this.lidarr.monitorAlbum(albumId);
+        await this.lidarr.searchAlbum(albumId);
+        const albumInfo: LidarrAlbum = await this.lidarr.getAlbum(albumId);
+        if (this.webhook) this.webhook.addPetition(albumId, clid);
+        this.sendMessage(clid, `El álbum **${albumInfo.title}** está en cola para descarga.\nTe aviso cuando esté listo.`);
+    }
   }
 
   /**
    * Adds a track to the queue and starts playing if the queue is empty.
-   * @param track LidarrTrack object with the track data.
+   * @param tracks LidarrTrack object with the track data.
    * @param clid String with the client ID of the invoker.
    * @private
    */
-  private async addToQueue(track: LidarrTrack, clid: string): Promise<void> {
-    const trackFile: { path: string } = await this.lidarr.getTrackFile(track.trackFileId);
-    this.playQueue.push({ track, trackFilePath: trackFile.path });
-    this.sendMessage(clid, `**+** **${track.title}** añadido a la cola (posición ${this.playQueue.length})`);
+  private async addToQueue(tracks: LidarrTrack[], clid: string): Promise<void> {
+    for (const track of tracks) {
+      const trackFile: { path: string } = await this.lidarr.getTrackFile(track.trackFileId);
+      this.playQueue.push({ track, trackFilePath: trackFile.path });
+      this.sendMessage(clid, `**+** **${track.title}** añadido a la cola (posición ${this.playQueue.length})`);
+    }
 
     if (!this.isPlaying) {
       await this.moveToUserChannel(clid);
@@ -558,11 +569,7 @@ export class MusicBot {
     const indexes: number[] = argsList.map((arg: string): number => parseInt(arg) - 1);
 
     if (indexes.some(i => isNaN(i) || i < 0 || i >= pending.results.length)) {
-      if (pending.type === 'info_tracks') {
-        this.sendMessage(clid, `Número inválido. Elige entre **1** y **${pending.results.length}** o elige varias canciones separadas por comas (ej: ${this.bot.command_prefix}pick 1,5,3)`);
-      } else {
-        this.sendMessage(clid, `Número inválido. Elige entre **1** y **${pending.results.length}**`);
-      }
+      this.sendMessage(clid, `Número inválido. Elige entre **1** y **${pending.results.length}**`);
       return;
     }
 
@@ -589,14 +596,14 @@ export class MusicBot {
       }
 
       case 'info_tracks': {
+        const pendingDownload: LidarrTrack[] = [];
+        const readyToPlay: LidarrTrack[] = [];
         for (const item of chosen) {
           const track = item.data as LidarrTrack;
-          if (track.hasFile) {
-            await this.addToQueue(track, clid);
-          } else {
-            await this.downloadTrack(track, clid);
-          }
+          track.hasFile ? readyToPlay.push(track) : pendingDownload.push(track);
         }
+        if (readyToPlay.length > 0) await this.addToQueue(readyToPlay, clid);
+        if (pendingDownload.length > 0) await this.downloadTrack(pendingDownload, clid);
         break;
       }
     }

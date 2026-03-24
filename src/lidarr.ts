@@ -178,6 +178,10 @@ export class LidarrClient {
     return this.get<LidarrAlbum[]>('/album', { artistId: String(artistId) });
   }
 
+  async getAlbum(albumId: number): Promise<LidarrAlbum> {
+    return this.get<LidarrAlbum>(`/album/${albumId}`);
+  }
+
   async getDefaultProfiles(): Promise<{ qualityProfileId: number; metadataProfileId: number; rootFolderPath: string }> {
     const [qualityProfiles, metadataProfiles, rootFolders] = await Promise.all([
       this.get<Array<{ id: number }>>('/qualityprofile'),
