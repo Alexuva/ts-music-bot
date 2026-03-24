@@ -554,39 +554,48 @@ export class MusicBot {
       return;
     }
 
-    const idx: number = parseInt(args) - 1;
-    if (isNaN(idx) || idx < 0 || idx >= pending.results.length) {
-      this.sendMessage(clid, `Número inválido. Elige entre **1** y **${pending.results.length}**`);
+    const argsList: string[] = args.trim().split(',');
+    const indexes: number[] = argsList.map((arg: string): number => parseInt(arg) - 1);
+
+    if (indexes.some(i => isNaN(i) || i < 0 || i >= pending.results.length)) {
+      if (pending.type === 'info_tracks') {
+        this.sendMessage(clid, `Número inválido. Elige entre **1** y **${pending.results.length}** o elige varias canciones separadas por comas (ej: ${this.bot.command_prefix}pick 1,5,3)`);
+      } else {
+        this.sendMessage(clid, `Número inválido. Elige entre **1** y **${pending.results.length}**`);
+      }
       return;
     }
 
     this.pendingSearches.delete(clid);
-    const chosen: { label: string, data: LidarrArtist | LidarrTrack | LidarrAlbum } = pending.results[idx];
+    const chosen: { label: string, data: LidarrArtist | LidarrTrack | LidarrAlbum }[] = [];
+    indexes.forEach((idx: number): number => chosen.push(pending.results[idx]));
 
     switch (pending.type) {
 
       case 'info_artist': {
-        await this.showAlbums(chosen.data as LidarrArtist, clid);
+        await this.showAlbums(chosen[0].data as LidarrArtist, clid);
         break;
       }
 
       case 'new_artist': {
-        const added = await this.addArtistAndNotify(chosen.data as LidarrArtist, clid);
+        const added: LidarrArtist|null = await this.addArtistAndNotify(chosen[0].data as LidarrArtist, clid);
         if (added) await this.showAlbums(added, clid);
         break;
       }
 
       case 'info_album': {
-        await this.showTracks(chosen.data as LidarrAlbum, clid);
+        await this.showTracks(chosen[0].data as LidarrAlbum, clid);
         break;
       }
 
       case 'info_tracks': {
-        const track = chosen.data as LidarrTrack;
-        if (track.hasFile) {
-          await this.addToQueue(track, clid);
-        } else {
-          await this.downloadTrack(track, clid);
+        for (const item of chosen) {
+          const track = item.data as LidarrTrack;
+          if (track.hasFile) {
+            await this.addToQueue(track, clid);
+          } else {
+            await this.downloadTrack(track, clid);
+          }
         }
         break;
       }
